@@ -100,8 +100,16 @@ var DarknetBase = /** @class */ (function () {
             'free_detections': ['void', [detection_pointer, 'int']],
             'load_network': ['pointer', ['string', 'string', 'int']],
             'get_metadata': [METADATA, ['string']],
+            'pthreadpool_create': ['pointer', ['int']],
+            'pthreadpool_destroy': ['void', ['pointer']],
+            'nnp_initialize': ['void', []],
+            'nnp_deinitialize': ['void', []],
+            'load_image_thread': [IMAGE, ['string', 'int', 'int', 'int', 'pointer']],
+            'letterbox_image_thread': [IMAGE, [IMAGE, 'int', 'int', 'pointer']],
         });
         this.net = this.darknet.load_network(config.config, config.weights, 0);
+        this.darknet.nnp_initialize();
+        this.threadpool = this.darknet.pthreadpool_create(4);
     }
     DarknetBase.prototype.getArrayFromBuffer = function (buffer, length, type) {
         var array = [];
@@ -207,7 +215,11 @@ var DarknetBase = /** @class */ (function () {
      * @returns IMAGE
      */
     DarknetBase.prototype.getImageFromPath = function (path) {
-        return this.darknet.load_image_color(path, 0, 0);
+        var im = this.darknet.load_image_thread(path, 0, 0, 3, this.threadpool);
+        var data = this.darknet.letterbox_image_thread(im, 416, 416, this.threadpool);
+        this.darknet.free_image(im);
+        return data;
+        // return this.darknet.load_image_color(path, 0, 0);
     };
     /**
      * Get a Darknet Image async from path

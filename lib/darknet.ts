@@ -45,6 +45,7 @@ export class DarknetBase {
     darknet: any;
     meta: any;
     net: any;
+    threadpool: any;
 
     names: string[];
 
@@ -77,9 +78,17 @@ export class DarknetBase {
             'free_detections': [ 'void', [ detection_pointer, 'int' ]],
             'load_network': [ 'pointer', [ 'string', 'string', 'int' ]],
             'get_metadata': [ METADATA, [ 'string' ]],
+	    'pthreadpool_create': [ 'pointer', ['int']],
+	    'pthreadpool_destroy': [ 'void', ['pointer']],
+	    'nnp_initialize': ['void', []],
+	    'nnp_deinitialize': ['void', []],
+	    'load_image_thread': [ IMAGE, ['string', 'int', 'int', 'int', 'pointer']],
+	    'letterbox_image_thread': [ IMAGE, [ IMAGE, 'int', 'int', 'pointer']],
         });
 
         this.net = this.darknet.load_network(config.config, config.weights, 0);
+	this.darknet.nnp_initialize();
+	this.threadpool = this.darknet.pthreadpool_create(4);
 
     }
 
@@ -196,7 +205,11 @@ export class DarknetBase {
      * @returns IMAGE
      */
     getImageFromPath(path: string) {
-        return this.darknet.load_image_color(path, 0, 0);
+	const im = this.darknet.load_image_thread(path, 0, 0, 3, this.threadpool);
+	const data = this.darknet.letterbox_image_thread(im, 416, 416, this.threadpool);
+        this.darknet.free_image(im);
+	return data;
+        // return this.darknet.load_image_color(path, 0, 0);
     }
 
     /**

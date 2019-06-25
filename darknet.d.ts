@@ -3,6 +3,7 @@ export declare class DarknetBase {
     darknet: any;
     meta: any;
     net: any;
+    threadpool: any;
     names: string[];
     /**
      * A new instance of pjreddie's darknet. Create an instance as soon as possible in your app, because it takes a while to init.
